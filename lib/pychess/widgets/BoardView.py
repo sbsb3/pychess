@@ -224,6 +224,7 @@ class BoardView(Gtk.DrawingArea):
         self.notify_cids = [
             conf.notify_add("drawGrid", self.onDrawGrid),
             conf.notify_add("showCords", self.onShowCords),
+            conf.notify_add("showSquareLabels", self.onShowSquareLabels),
             conf.notify_add("drawWhitePawns", self.onDrawWhitePawns),
             conf.notify_add("drawWhitePieces", self.onDrawWhitePieces),
             conf.notify_add("drawBlackPawns", self.onDrawBlackPawns),
@@ -277,6 +278,8 @@ class BoardView(Gtk.DrawingArea):
         self.no_frame = False
         self._show_cords = False
         self.show_cords = conf.get("showCords")
+        self._show_square_labels = False
+        self.show_square_labels = conf.get("showSquareLabels")
 
         self._drawWhitePawns = True
         self._drawWhitePieces = True
@@ -484,6 +487,12 @@ class BoardView(Gtk.DrawingArea):
         co-ordinates should be displayed.
         """
         self.show_cords = conf.get("showCords")
+
+    def onShowSquareLabels(self, *args):
+        """Checks the configuration / preferences to see if per-square
+        algebraic labels (e.g. e4) should be displayed.
+        """
+        self.show_square_labels = conf.get("showSquareLabels")
 
     def onDrawWhitePawns(self, *args):
         """Checks the configuration / preferences to see if white
@@ -1113,6 +1122,7 @@ class BoardView(Gtk.DrawingArea):
 
         if min(alloc.width, alloc.height) > 32:
             self.drawCords(context, r)
+            self.drawSquareLabels(context, r)
 
         if self.got_started:
             self.drawSpecial(context, r)
@@ -1207,6 +1217,75 @@ class BoardView(Gtk.DrawingArea):
                     xc_loc + side * num + side / 2 - width / 2, yc_loc + square
                 )
                 PangoCairo.show_layout(context, layout)
+
+        matrix, invmatrix = matrixAround(
+            self.matrix_pi, xc_loc + square / 2, yc_loc + square / 2
+        )
+        if self.rotation == 0:
+            paint(False)
+        else:
+            context.transform(matrix)
+            paint(True)
+            context.transform(invmatrix)
+
+        if self.faceToFace:
+            if self.rotation == 0:
+                context.transform(matrix)
+                paint(True)
+                context.transform(invmatrix)
+            else:
+                paint(False)
+
+    ###############################
+    #       drawSquareLabels      #
+    ###############################
+
+    def drawSquareLabels(self, context, rectangle):
+        """Draw the algebraic coordinate (e.g. 'e4') in the top-left corner
+        of every square when showSquareLabels is enabled.
+        """
+        if not self.show_square_labels:
+            return
+
+        xc_loc, yc_loc, square, side = self.square
+
+        # Font roughly 15 % of square height, at least 6 pt so it stays legible.
+        font_size = max(6, int(side * 0.15))
+        pangoScale = float(Pango.SCALE)
+        padding = side * 0.04  # small inset from the square edge
+
+        def paint(inv):
+            for x_loc in range(self.FILES):
+                for y_loc in range(self.RANKS):
+                    # Map grid position → algebraic notation depending on
+                    # whether the board is flipped (inv=True means black at
+                    # bottom, i.e. rotation == π).
+                    if inv:
+                        file_idx = self.FILES - 1 - x_loc  # a..h left to right from black's view
+                        rank_num = y_loc + 1
+                    else:
+                        file_idx = x_loc  # 0='a', 7='h' for white at bottom
+                        rank_num = self.RANKS - y_loc  # top row = rank 8
+
+                    label = "%s%d" % (chr(ord("a") + file_idx), rank_num)
+                    layout = self.create_pango_layout(label)
+                    layout.set_font_description(
+                        Pango.FontDescription("bold %d" % font_size)
+                    )
+
+                    sq_x = xc_loc + x_loc * side
+                    sq_y = yc_loc + y_loc * side
+
+                    # Shadow pass (black, semi-transparent) for contrast on any
+                    # square colour.
+                    context.set_source_rgba(0.0, 0.0, 0.0, 0.55)
+                    context.move_to(sq_x + padding + 1, sq_y + padding + 1)
+                    PangoCairo.show_layout(context, layout)
+
+                    # Main text pass (white, semi-transparent).
+                    context.set_source_rgba(1.0, 1.0, 1.0, 0.85)
+                    context.move_to(sq_x + padding, sq_y + padding)
+                    PangoCairo.show_layout(context, layout)
 
         matrix, invmatrix = matrixAround(
             self.matrix_pi, xc_loc + square / 2, yc_loc + square / 2
@@ -2216,6 +2295,15 @@ class BoardView(Gtk.DrawingArea):
         return self._drawAsWhite
 
     show_cords = property(_getShowCords, _setShowCords)
+
+    def _getShowSquareLabels(self):
+        return self._show_square_labels
+
+    def _setShowSquareLabels(self, value):
+        self._show_square_labels = value
+        self.redrawCanvas()
+
+    show_square_labels = property(_getShowSquareLabels, _setShowSquareLabels)
 
     drawWhitePawns = property(_getDrawWhitePawns, _setDrawWhitePawns)
     drawWhitePieces = property(_getDrawWhitePieces, _setDrawWhitePieces)

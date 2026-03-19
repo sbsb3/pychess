@@ -2820,7 +2820,21 @@ It will search positions from http://www.k4it.de/</property>
                                               </packing>
                                             </child>
                                             <child>
-                                              <placeholder/>
+                                              <object class="GtkCheckButton" id="showSquareLabels">
+                                                <property name="label" translatable="yes">Show square _labels</property>
+                                                <property name="visible">True</property>
+                                                <property name="can-focus">True</property>
+                                                <property name="receives-default">False</property>
+                                                <property name="tooltip-text" translatable="yes">Display the algebraic coordinate (e.g. e4) in the corner of every square.</property>
+                                                <property name="halign">start</property>
+                                                <property name="use-underline">True</property>
+                                                <property name="xalign">0</property>
+                                                <property name="draw-indicator">True</property>
+                                              </object>
+                                              <packing>
+                                                <property name="left-attach">3</property>
+                                                <property name="top-attach">2</property>
+                                              </packing>
                                             </child>
                                             <child>
                                               <placeholder/>

@@ -111,6 +111,7 @@ DEFAULTS = {
         "showFICSgameno": False,
         "fullAnimation": True,
         "showCords": True,
+        "showSquareLabels": True,
         "drawWhitePawns": True,
         "drawWhitePieces": True,
         "drawBlackPawns": True,
