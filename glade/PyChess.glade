@@ -2837,10 +2837,38 @@ It will search positions from http://www.k4it.de/</property>
                                               </packing>
                                             </child>
                                             <child>
-                                              <placeholder/>
+                                              <object class="GtkCheckButton" id="squareLabelInvert">
+                                                <property name="label" translatable="yes">_Invert label colours</property>
+                                                <property name="visible">True</property>
+                                                <property name="can-focus">True</property>
+                                                <property name="receives-default">False</property>
+                                                <property name="tooltip-text" translatable="yes">Draw dark text on light squares and light text on dark squares.</property>
+                                                <property name="halign">start</property>
+                                                <property name="use-underline">True</property>
+                                                <property name="xalign">0</property>
+                                                <property name="draw-indicator">True</property>
+                                              </object>
+                                              <packing>
+                                                <property name="left-attach">1</property>
+                                                <property name="top-attach">3</property>
+                                              </packing>
                                             </child>
                                             <child>
-                                              <placeholder/>
+                                              <object class="GtkCheckButton" id="squareLabelBold">
+                                                <property name="label" translatable="yes">_Bold label font</property>
+                                                <property name="visible">True</property>
+                                                <property name="can-focus">True</property>
+                                                <property name="receives-default">False</property>
+                                                <property name="tooltip-text" translatable="yes">Use a bold font for the square coordinate labels.</property>
+                                                <property name="halign">start</property>
+                                                <property name="use-underline">True</property>
+                                                <property name="xalign">0</property>
+                                                <property name="draw-indicator">True</property>
+                                              </object>
+                                              <packing>
+                                                <property name="left-attach">3</property>
+                                                <property name="top-attach">3</property>
+                                              </packing>
                                             </child>
                                             <child>
                                               <placeholder/>

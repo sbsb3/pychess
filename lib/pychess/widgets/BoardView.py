@@ -225,6 +225,8 @@ class BoardView(Gtk.DrawingArea):
             conf.notify_add("drawGrid", self.onDrawGrid),
             conf.notify_add("showCords", self.onShowCords),
             conf.notify_add("showSquareLabels", self.onShowSquareLabels),
+            conf.notify_add("squareLabelInvert", self.onSquareLabelInvert),
+            conf.notify_add("squareLabelBold", self.onSquareLabelBold),
             conf.notify_add("drawWhitePawns", self.onDrawWhitePawns),
             conf.notify_add("drawWhitePieces", self.onDrawWhitePieces),
             conf.notify_add("drawBlackPawns", self.onDrawBlackPawns),
@@ -280,6 +282,10 @@ class BoardView(Gtk.DrawingArea):
         self.show_cords = conf.get("showCords")
         self._show_square_labels = False
         self.show_square_labels = conf.get("showSquareLabels")
+        self._square_label_invert = True
+        self.square_label_invert = conf.get("squareLabelInvert")
+        self._square_label_bold = True
+        self.square_label_bold = conf.get("squareLabelBold")
 
         self._drawWhitePawns = True
         self._drawWhitePieces = True
@@ -493,6 +499,12 @@ class BoardView(Gtk.DrawingArea):
         algebraic labels (e.g. e4) should be displayed.
         """
         self.show_square_labels = conf.get("showSquareLabels")
+
+    def onSquareLabelInvert(self, *args):
+        self.square_label_invert = conf.get("squareLabelInvert")
+
+    def onSquareLabelBold(self, *args):
+        self.square_label_bold = conf.get("squareLabelBold")
 
     def onDrawWhitePawns(self, *args):
         """Checks the configuration / preferences to see if white
@@ -1251,7 +1263,7 @@ class BoardView(Gtk.DrawingArea):
 
         # Font roughly 15 % of square height, at least 6 pt so it stays legible.
         font_size = max(6, int(side * 0.15))
-        pangoScale = float(Pango.SCALE)
+        font_weight = "bold " if self.square_label_bold else ""
         padding = side * 0.04  # small inset from the square edge
 
         def paint(inv):
@@ -1261,7 +1273,7 @@ class BoardView(Gtk.DrawingArea):
                     # whether the board is flipped (inv=True means black at
                     # bottom, i.e. rotation == π).
                     if inv:
-                        file_idx = self.FILES - 1 - x_loc  # a..h left to right from black's view
+                        file_idx = self.FILES - 1 - x_loc
                         rank_num = y_loc + 1
                     else:
                         file_idx = x_loc  # 0='a', 7='h' for white at bottom
@@ -1270,22 +1282,31 @@ class BoardView(Gtk.DrawingArea):
                     label = "%s%d" % (chr(ord("a") + file_idx), rank_num)
                     layout = self.create_pango_layout(label)
                     layout.set_font_description(
-                        Pango.FontDescription("bold %d" % font_size)
+                        Pango.FontDescription("%s%d" % (font_weight, font_size))
                     )
 
                     sq_x = xc_loc + x_loc * side
                     sq_y = yc_loc + y_loc * side
 
-                    # Shadow pass (black, semi-transparent) for contrast on any
-                    # square colour.
-                    context.set_source_rgba(0.0, 0.0, 0.0, 0.55)
-                    context.move_to(sq_x + padding + 1, sq_y + padding + 1)
-                    PangoCairo.show_layout(context, layout)
-
-                    # Main text pass (white, semi-transparent).
-                    context.set_source_rgba(1.0, 1.0, 1.0, 0.85)
-                    context.move_to(sq_x + padding, sq_y + padding)
-                    PangoCairo.show_layout(context, layout)
+                    if self.square_label_invert:
+                        # Light square (x+y even) → dark text; dark square → light text.
+                        is_light = (x_loc % 2 + y_loc % 2) != 1
+                        if is_light:
+                            context.set_source_rgba(0.0, 0.0, 0.0, 0.75)
+                            context.move_to(sq_x + padding, sq_y + padding)
+                            PangoCairo.show_layout(context, layout)
+                        else:
+                            context.set_source_rgba(1.0, 1.0, 1.0, 0.85)
+                            context.move_to(sq_x + padding, sq_y + padding)
+                            PangoCairo.show_layout(context, layout)
+                    else:
+                        # Fixed: white text with black shadow, readable on both.
+                        context.set_source_rgba(0.0, 0.0, 0.0, 0.55)
+                        context.move_to(sq_x + padding + 1, sq_y + padding + 1)
+                        PangoCairo.show_layout(context, layout)
+                        context.set_source_rgba(1.0, 1.0, 1.0, 0.85)
+                        context.move_to(sq_x + padding, sq_y + padding)
+                        PangoCairo.show_layout(context, layout)
 
         matrix, invmatrix = matrixAround(
             self.matrix_pi, xc_loc + square / 2, yc_loc + square / 2
@@ -2304,6 +2325,24 @@ class BoardView(Gtk.DrawingArea):
         self.redrawCanvas()
 
     show_square_labels = property(_getShowSquareLabels, _setShowSquareLabels)
+
+    def _getSquareLabelInvert(self):
+        return self._square_label_invert
+
+    def _setSquareLabelInvert(self, value):
+        self._square_label_invert = value
+        self.redrawCanvas()
+
+    square_label_invert = property(_getSquareLabelInvert, _setSquareLabelInvert)
+
+    def _getSquareLabelBold(self):
+        return self._square_label_bold
+
+    def _setSquareLabelBold(self, value):
+        self._square_label_bold = value
+        self.redrawCanvas()
+
+    square_label_bold = property(_getSquareLabelBold, _setSquareLabelBold)
 
     drawWhitePawns = property(_getDrawWhitePawns, _setDrawWhitePawns)
     drawWhitePieces = property(_getDrawWhitePieces, _setDrawWhitePieces)

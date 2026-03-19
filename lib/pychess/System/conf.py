@@ -112,6 +112,8 @@ DEFAULTS = {
         "fullAnimation": True,
         "showCords": True,
         "showSquareLabels": True,
+        "squareLabelInvert": True,
+        "squareLabelBold": True,
         "drawWhitePawns": True,
         "drawWhitePieces": True,
         "drawBlackPawns": True,
