@@ -253,6 +253,7 @@ class BoardView(Gtk.DrawingArea):
         self.animation_start = time()
         self.last_shown = None
         self.deadlist = []
+        self._animation_tick_id = None
 
         self.auto_update_shown = True
 
@@ -356,6 +357,9 @@ class BoardView(Gtk.DrawingArea):
         self.last_shown = 0
 
     def _del(self):
+        if self._animation_tick_id is not None:
+            self.remove_tick_callback(self._animation_tick_id)
+            self._animation_tick_id = None
         self.disconnect(self.draw_cid)
         self.disconnect(self.realize_cid)
         for cid in self.notify_cids:
@@ -883,9 +887,7 @@ class BoardView(Gtk.DrawingArea):
             self.lastMove = None
 
         self.runAnimation(redraw_misc=self.real_set_shown)
-        if not self.noAnimation:
-            while self.animating:
-                self.runAnimation()
+        self._driveAnimation()
 
     shown = property(_getShown, _setShown)
 
@@ -1026,9 +1028,30 @@ class BoardView(Gtk.DrawingArea):
         self.animating = True
 
         self.runAnimation(redraw_misc=True)
-        if not self.noAnimation:
+        self._driveAnimation()
+
+    def _driveAnimation(self):
+        """Run the remaining animation frames.
+
+        Frames are driven by the widget's frame clock so GTK gets to paint
+        each one. A synchronous loop here would only invalidate regions that
+        never get painted until the loop ends, so pieces would just jump.
+        """
+        if self.noAnimation or not self.animating:
+            return
+        if not self.get_mapped():
+            # No frame clock ticks for unmapped widgets; finish immediately.
             while self.animating:
                 self.runAnimation()
+            return
+        if self._animation_tick_id is None:
+            self._animation_tick_id = self.add_tick_callback(self._onAnimationTick)
+
+    def _onAnimationTick(self, widget, frame_clock):
+        if self.runAnimation():
+            return GLib.SOURCE_CONTINUE
+        self._animation_tick_id = None
+        return GLib.SOURCE_REMOVE
 
     #############################
     #          Drawing          #
