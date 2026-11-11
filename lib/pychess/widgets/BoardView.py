@@ -1157,7 +1157,6 @@ class BoardView(Gtk.DrawingArea):
 
         if min(alloc.width, alloc.height) > 32:
             self.drawCords(context, r)
-            self.drawSquareLabels(context, r)
 
         if self.got_started:
             self.drawSpecial(context, r)
@@ -1168,6 +1167,10 @@ class BoardView(Gtk.DrawingArea):
             self.drawPieces(context, r)
             if not self.setup_position:
                 self.drawLastMove(context, r)
+
+        # Square labels go last so pieces, highlights and arrows never hide them.
+        if min(alloc.width, alloc.height) > 32:
+            self.drawSquareLabels(context, r)
 
         if self.model.status == KILLED:
             pass
